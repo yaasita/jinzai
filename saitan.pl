@@ -115,5 +115,8 @@ open_node("4-4");
 open_node("3-3");
 open_node("3-4");
 open_node("2-3");
+open_node("3-5");
+open_node("1-3");
+open_node("2-5");
 say next_node();
 print Dumper $map[3][5];
