@@ -60,63 +60,88 @@ sub next_node {
     }
 }
 sub open_node {
-    calc_node($_[0],"up");
-    calc_node($_[0],"down");
-    calc_node($_[0],"left");
-    calc_node($_[0],"right");
-    calc_node($_[0],"base");
-}
-sub calc_node {
-    my ($r,$c) = split(/\-/,$_[0]);
-    my $op = $_[1];
-    if ($op eq "up"){
-        $r -= 1;
-    }
-    elsif ($op eq "down"){
-        $r += 1;
-    }
-    elsif ($op eq "left"){
-        $c -= 1;
-    }
-    elsif ($op eq "right"){
-        $c += 1;
-    }
-    elsif ($op eq "base"){
-        $map[$r]->[$c]->{status} = "close";
-        return;
-    }
-    my $node = $map[$r]->[$c];
-    unless ($node->{status} eq "none" and $node->{data} eq " "){
-        return;
-    }
-    my $parent_cost = sub {
+    my $calc = sub {
         my ($r,$c) = split(/\-/,$_[0]);
-        return $map[$r]->[$c]->{c}+0;
+        my $op = $_[1];
+        if ($op eq "up"){
+            $r -= 1;
+        }
+        elsif ($op eq "down"){
+            $r += 1;
+        }
+        elsif ($op eq "left"){
+            $c -= 1;
+        }
+        elsif ($op eq "right"){
+            $c += 1;
+        }
+        elsif ($op eq "base"){
+            $map[$r]->[$c]->{status} = "close";
+            return "";
+        }
+        my $node = $map[$r]->[$c];
+        if ($node->{status} ne "none"){
+            return "";
+        }
+        elsif ($node->{data} !~ / |G/ ){
+            return "";
+        }
+        my $parent_cost = sub {
+            my ($r,$c) = split(/\-/,$_[0]);
+            return $map[$r]->[$c]->{c}+0;
+        };
+        my $distance = sub {
+            my $r1 = shift;
+            my $c1 = shift;
+            my ($r2,$c2) = split(/\-/,$goal);
+            return abs($r1-$r2);
+        };
+        $map[$r]->[$c]->{status} = "open";
+        $map[$r]->[$c]->{parent} = "$_[0]";
+        $map[$r]->[$c]->{c}      = $parent_cost->($_[0])+1;
+        $map[$r]->[$c]->{h}      = $distance->($r,$c);
+        $map[$r]->[$c]->{s}      = $map[$r]->[$c]->{c} + $map[$r]->[$c]->{h};
+        return $map[$r]->[$c]->{data};
     };
-    my $distance = sub {
-        my $r1 = shift;
-        my $c1 = shift;
-        my ($r2,$c2) = split(/\-/,$goal);
-        return abs($r1-$r2);
-    };
-    $map[$r]->[$c]->{status} = "open";
-    $map[$r]->[$c]->{parent} = "$_[0]";
-    $map[$r]->[$c]->{c}      = $parent_cost->($_[0])+1;
-    $map[$r]->[$c]->{h}      = $distance->($r,$c);
-    $map[$r]->[$c]->{s}      = $map[$r]->[$c]->{c} + $map[$r]->[$c]->{h};
+    for (qw/up down left right base/){
+        if ( $calc->($_[0],$_) eq "G" ){
+            return "G";
+        }
+    }
 }
-open_node(next_node());
-open_node("2-1");
-open_node("3-1");
-open_node("4-1");
-open_node("4-2");
-open_node("4-3");
-open_node("4-4");
-open_node("3-3");
-open_node("3-4");
-open_node("2-3");
-open_node("3-5");
-open_node("1-3");
-open_node("2-5");
-say next_node();
-print Dumper $map[3][5];
+while (1){
+    if (open_node(next_node()) eq "G"){
+        last;
+    }
+}
+# 後ろからゴールまで辿る
+{
+    my $parent = sub {
+        my ($r,$c) = split(/\-/,$_[0]);
+        return $map[$r]->[$c]->{parent};
+    };
+    my $s = $goal;
+    my @path;
+    while (1){
+        if ($s !~ /\-/){
+            last;
+        }
+        push (@path,$s);
+        $s = $parent->($s);
+    }
+    my $write = sub {
+        my ($r,$c) = split(/\-/,$_[0]);
+        if ($map[$r][$c]->{data} eq " "){
+            $map[$r][$c]->{data}= '$';
+        }
+    };
+    for (@path){
+        $write->($_);
+    }
+}
+# 書き出し
+for (@map){
+    my $line = $_;
+    print $_->{data} for @{$line};
+    print "\n";
+}
