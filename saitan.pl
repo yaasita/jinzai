@@ -94,7 +94,7 @@ sub open_node {
             my $r1 = shift;
             my $c1 = shift;
             my ($r2,$c2) = split(/\-/,$goal);
-            return abs($r1-$r2);
+            return abs($r1-$r2) + abs($c1-$c2);
         };
         $map[$r]->[$c]->{status} = "open";
         $map[$r]->[$c]->{parent} = "$_[0]";
